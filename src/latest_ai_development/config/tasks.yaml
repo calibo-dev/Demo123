@@ -1,0 +1,18 @@
+research_task:
+  description: >
+    Conduct a thorough research about {topic}
+    Make sure you find any interesting and relevant information given
+    the current year is {current_year}.
+  expected_output: >
+    A list with 10 bullet points of the most relevant information about {topic}
+  agent: researcher
+
+reporting_task:
+  description: >
+    Review the research context and write a concise report with short sections.
+    Focus on the 5 most important points only.
+    Keep the response compact, clear, and within a few paragraphs.
+  expected_output: >
+    A concise markdown report covering the 5 most important findings with short sections.
+    Formatted as markdown without '```'
+  agent: reporting_analyst

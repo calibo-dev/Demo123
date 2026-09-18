@@ -1,0 +1,51 @@
+{{- if and .Values.ingress.enabled (eq .Values.ingress.controllerType "traefik") }}
+{{- $fullName := include "#RELEASE_NAME#.fullname" . -}}
+{{- $hosts := default (list) .Values.ingress.hosts -}}
+{{- $path := .Values.ingress.paths.path -}}
+
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ .Values.namespace | default .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "#RELEASE_NAME#.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  entryPoints:
+    - web
+    - websecure
+  {{- if and .Values.ingress.tls.enabled (not .Values.ingress.traefik.tlsStore.enabled) }}
+  tls:
+    secretName: {{ .Values.ingress.traefik.tlsStore.secretName }}
+  {{- end }}
+  routes:
+  {{- if gt (len $hosts) 0 }}
+    {{- range $hosts }}
+    - match: Host(`{{ . }}`) && PathPrefix(`{{ $path }}`)
+      kind: Rule
+      {{- if $.Values.ingress.traefik.middleware.enabled }}
+      middlewares:
+        {{- range $.Values.ingress.traefik.middleware.attach }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
+      services:
+        - name: {{ $fullName }}
+          port: 80
+    {{- end }}
+  {{- else }}
+    - match: PathPrefix(`{{ $path }}`)
+      kind: Rule
+      {{- if $.Values.ingress.traefik.middleware.enabled }}
+      middlewares:
+        {{- range $.Values.ingress.traefik.middleware.attach }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
+      services:
+        - name: {{ $fullName }}
+          port: 80
+  {{- end }}
+{{- end }}

@@ -1,0 +1,219 @@
+replicaCount: 1
+
+image:
+  repository: REGISTRY_URL
+  tag: BUILD_ID
+  pullPolicy: Always
+  registrySecret: REGISTRY_SECRET_ID
+
+nameOverride: #SERVICE_NAME#
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  scheme: internet-facing
+  internalport: CONTAINER_PORT
+  #annotations:
+  #extraAnnotations:
+
+updateStrategy:
+  rollingUpdate:
+    maxUnavailable: 0
+  type: RollingUpdate
+
+ingress:
+  enabled: false
+  ingressClass: nginx
+  tls: 
+    enabled: false
+    secretName: REPLACE_WITH_YOUR_SECRET_NAME
+  #annotations:
+  paths:
+    path: /RELEASE_NAME
+  albAnnotations:
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=600
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+  #albExtraAnnotations:
+  #agicAnnotations:
+  #agicExtraAnnotations:
+  controllerType: nginx
+  nginxAnnotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  #nginxExtraAnnotations:
+  ## Use below to use Traefik Ingress with middleware or trust store
+  traefik: 
+    tlsStore:
+      enabled: false
+      secretName: REPLACE_WITH_YOUR_SECRET_NAME
+    middleware:
+      enabled: false
+      definitions:
+        strip-path:
+          spec:
+            stripPrefix:
+              prefixes:
+                - /RELEASE_NAME
+        security-headers:
+          spec:
+            headers:
+              contentTypeNosniff: true
+              frameDeny: true
+              stsSeconds: 31536000
+              stsIncludeSubdomains: true
+        rate-limit:
+          spec:
+            rateLimit:
+              average: 10
+              burst: 20
+      attach:
+        - strip-path
+        - security-headers
+
+
+context: CONTEXT_PATH
+serviceAccountName: default
+mountServiceAccountToken: false
+
+securityContext:
+  runAsUser: 1001
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  privileged: false
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - NET_RAW
+      - ALL
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+tmpDir:
+  enabled: true
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+oc:
+  route:
+    enabled: false
+    host: 'test.com'
+
+autoscaling:
+  enabled: false
+#  minReplicas: 1
+#  maxReplicas: 5
+#  metrics:
+#    - type: Resource
+#      resource:
+#        name: cpu
+#        target:
+#          type: Utilization
+#          averageUtilization: 80
+#    - type: Resource
+#      resource:
+#        name: memory
+#        target:
+#          type: Utilization
+#          averageUtilization: 80
+##    - type: ContainerResource # This works only with k8s version 1.20 and above
+##      containerResource:
+##        name: cpu
+##        container: application
+##        target:
+##          type: Utilization
+##          averageUtilization: 80
+#  behavior:
+#    scaleDown:
+#      stabilizationWindowSeconds: 300
+#      policies:
+#        - type: Pods
+#          value: 1
+#          periodSeconds: 300
+
+#extraEnv: |
+#  - name: TEST
+#    value: "Test2"
+#  - name: TEST2
+#    value: 'Test2'
+
+
+#extraEnvFrom:
+#  - configMapRef:
+#      name: special-config
+
+extraPorts: ''
+#  - name: http-2
+#    containerPort: 8089
+#    protocol: TCP
+#  - name: http-1
+#    containerPort: 8080
+#    protocol: UDP
+
+probes:
+  livenessProbe: ''
+  #  failureThreshold: 10
+  #  httpGet:
+  #    path: /healthz
+  #    port: 8080
+  #    scheme: HTTP
+  #  initialDelaySeconds: 40
+  #  periodSeconds: 5
+  #  successThreshold: 1
+  #  timeoutSeconds: 10
+#
+  readinessProbe: ''
+  #  failureThreshold: 10
+  #  httpGet:
+  #    path: /readyz
+  #    port: 8080
+  #    scheme: HTTP
+  #  initialDelaySeconds: 40
+  #  periodSeconds: 5
+  #  successThreshold: 1
+  #  timeoutSeconds: 10
+#
+  startupProbe: ''
+#    httpGet:
+#      path: /iui/
+#      port: 8021
+#    initialDelaySeconds: 30
+#    timeoutSeconds: 1
+#    failureThreshold: 60
+#    periodSeconds: 5
+
+volumes:
+  enabled: true
+  data:
+    - name: appdata
+      emptyDir: {}
+  mounts:
+    enabled: true
+    data:
+      - name: appdata
+        mountPath: /app/data
